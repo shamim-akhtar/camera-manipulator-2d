@@ -4,27 +4,50 @@ using UnityEngine.EventSystems;
 
 public class CameraManipulator2D : MonoBehaviour
 {
-  public float CameraSizeMin = 1.0f;
-  public float CameraSizeMax = 10.0f;
+  // Set the min and the max size for this 
+  // camera so that we can fix the limits
+  // of our zoom in and zoom out.
+  [SerializeField]
+  float CameraSizeMin = 1.0f;
+  [SerializeField]
+  float CameraSizeMax = 10.0f;
 
+  // The slider for zoom-in and zoom-out
+  [SerializeField]
+  public Slider SliderZoom;
+
+  [SerializeField]
+  FixedButton BtnZoomIn;
+  [SerializeField]
+  FixedButton BtnZoomOut;
+
+  // A property to allow/disallow 
+  // panning of camera.
+  // You can set panning to be false
+  // if you want to disable panning.
+  // One exmaple could be when you are
+  // dragung or interacting with a game object 
+  // then you can disable camera panning.
   public static bool IsCameraPanning
   {
     get;
     set;
   } = true;
 
-  public Slider mSliderZoom;
-
+  // Some variables needed for dragging our 
+  // camera to creae the pan control
   private Vector3 mDragPos;
   private Vector3 mOriginalPosition;
-
-  private float mZoomFactor = 0.0f;
-  private Camera mCamera;
   private bool mDragging = false;
+
+  // The zoom factor
+  private float mZoomFactor = 0.0f;
+
+  // Save a reference to the Camera.main
+  private Camera mCamera;
 
   void Start()
   {
-    SetCamera(Camera.main);
     if(CameraSizeMax < CameraSizeMin)
     {
       float tmp = CameraSizeMax;
@@ -36,6 +59,8 @@ public class CameraManipulator2D : MonoBehaviour
     {
       CameraSizeMax += 0.1f;
     }
+
+    SetCamera(Camera.main);
   }
 
   public void SetCamera(Camera camera)
@@ -43,18 +68,33 @@ public class CameraManipulator2D : MonoBehaviour
     mCamera = camera;
     mOriginalPosition = mCamera.transform.position;
 
+    // For this demo, we simple take the current camera
+    // and calculate the zoom factor.
+    // Alternately, you may want to set the zoom factor
+    // in other ways. For example, randomize the 
+    // zoom factory between 0 and 1.
+
     mZoomFactor = 
       (CameraSizeMax - mCamera.orthographicSize) / 
       (CameraSizeMax - CameraSizeMin);
 
-    if (mSliderZoom)
+    if (SliderZoom)
     {
-      mSliderZoom.value = mZoomFactor;
+      SliderZoom.value = mZoomFactor;
     }
   }
 
   void Update()
   {
+    if (BtnZoomIn && BtnZoomIn.Pressed)
+    {
+      ZoomIn();
+    }
+    if (BtnZoomOut && BtnZoomOut.Pressed)
+    {
+      ZoomOut();
+    }
+
     // Camera panning is disabled when a tile is selected.
     if (!IsCameraPanning)
     {
@@ -98,27 +138,31 @@ public class CameraManipulator2D : MonoBehaviour
     mCamera.transform.position = mOriginalPosition;
     mCamera.orthographicSize = CameraSizeMax;
     mZoomFactor = 0.0f;
-    if (mSliderZoom)
+    if (SliderZoom)
     {
-      mSliderZoom.value = 0.0f;
+      SliderZoom.value = 0.0f;
     }
   }
 
   public void OnSliderValueChanged()
   {
-    Zoom(mSliderZoom.value);
+    Zoom(SliderZoom.value);
   }
 
   public void Zoom(float value)
   {
     mZoomFactor = value;
+    // clamp the value between 0 and 1.
     mZoomFactor = Mathf.Clamp01(mZoomFactor);
 
-    if(mSliderZoom)
+    if(SliderZoom)
     {
-      mSliderZoom.value = mZoomFactor;
+      // if the slider is valied
+      // set the value to the slider.
+      SliderZoom.value = mZoomFactor;
     }
 
+    // set the camera size
     mCamera.orthographicSize = CameraSizeMax -
         mZoomFactor * 
         (CameraSizeMax - CameraSizeMin);
@@ -126,11 +170,14 @@ public class CameraManipulator2D : MonoBehaviour
 
   public void ZoomIn()
   {
-    Zoom(mZoomFactor + 0.01f);
+    // For this demo we hardcode 
+    // the increment. You should
+    // avoid hardcoding the value.
+    Zoom(mZoomFactor + (CameraSizeMax - CameraSizeMin) * 0.0001f);
   }
 
   public void ZoomOut()
   {
-    Zoom(mZoomFactor - 0.01f);
+    Zoom(mZoomFactor - (CameraSizeMax - CameraSizeMin) * 0.0001f);
   }
 }
